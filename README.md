@@ -1,87 +1,104 @@
 ## Prototype Development for Image Generation Using the Stable Diffusion Model and Gradio Framework
-## AIM
-To develop a prototype that utilizes the Stable Diffusion model for generating images from text prompts and integrate it with an interactive Gradio-based user interface.
 
-## PROBLEM STATEMENT
+### AIM:
+To design and deploy a prototype application for image generation utilizing the Stable Diffusion model, integrated with the Gradio UI framework for interactive user engagement and evaluation.
+
+### PROBLEM STATEMENT:
 The task involves creating a user-friendly interface where users can input text descriptions (prompts) to generate high-quality, realistic images using the Stable Diffusion model. The prototype aims to demonstrate the capabilities of the model while ensuring ease of interaction through Gradio.
+### DESIGN STEPS:
 
-##  STEPS
-### Step 1: Set Up Environment
- - Install the required libraries (diffusers, transformers, torch, gradio).
- - Verify GPU support for running Stable Diffusion.
-### Step 2: Load the Stable Diffusion Model
- - Use the diffusers library to load the Stable Diffusion pipeline.
-### Step 3: Define the Gradio Interface
- - Design the user interface to accept text prompts and generate corresponding images.
- - Add parameters for customization (e.g., number of inference steps, guidance scale).
-### Step 4: Integrate the Model with the Interface
- - Connect the Stable Diffusion model to the Gradio interface for real-time inference.
-### Step 5: Deploy and Test
- - Launch the Gradio application locally or on a server.
- - Test with diverse prompts to ensure functionality.
-## PROGRAM
-```
-Name: R Guruprasad
-Register No: 212222240033
-```
-```python
+#### STEP 1:
+* Install the required libraries (diffusers, transformers, torch, gradio).
+* Verify GPU support for running Stable Diffusion.
+#### STEP 2:
+* Use the diffusers library to load the Stable Diffusion pipeline
+#### STEP 3:
+* Design the user interface to accept text prompts and generate corresponding images.
+* Add parameters for customization (e.g., number of inference steps, guidance scale).
+#### STEP 4:
+* Connect the Stable Diffusion model to the Gradio interface for real-time inference.
+#### STEP 5:
+* Launch the Gradio application locally or on a server.
+* Test with diverse prompts to ensure functionality.
+### PROGRAM:
+```py
+import os
+import io
+import IPython.display
+from PIL import Image
+import base64 
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv()) # read local .env file
+hf_api_key = os.environ['HF_API_KEY']
 
-# Import required libraries
-import torch
-from diffusers import StableDiffusionPipeline
-import gradio as gr
+# Helper function
+import requests, json
 
-# Step 1: Load the Stable Diffusion model
-def load_model():
-    model_id = "runwayml/stable-diffusion-v1-5"
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
-    pipe = pipe.to(device)
-    return pipe
+#Text-to-image endpoint
+def get_completion(inputs, parameters=None, ENDPOINT_URL=os.environ['HF_API_TTI_BASE']):
+    headers = {
+      "Authorization": f"Bearer {hf_api_key}",
+      "Content-Type": "application/json"
+    }   
+    data = { "inputs": inputs }
+    if parameters is not None:
+        data.update({"parameters": parameters})
+    response = requests.request("POST",
+                                ENDPOINT_URL,
+                                headers=headers,
+                                data=json.dumps(data))
+    return json.loads(response.content.decode("utf-8"))
 
-# Initialize the pipeline
-pipe = load_model()
+import gradio as gr 
 
-# Step 2: Define the image generation function
-def generate_image(prompt, num_inference_steps=50, guidance_scale=7.5):
-    """
-    Generates an image based on the text prompt using Stable Diffusion.
-    """
-    image = pipe(prompt, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale).images[0]
-    return image
+#A helper function to convert the PIL image to base64 
+# so you can send it to the API
+def base64_to_pil(img_base64):
+    base64_decoded = base64.b64decode(img_base64)
+    byte_stream = io.BytesIO(base64_decoded)
+    pil_image = Image.open(byte_stream)
+    return pil_image
 
-# Step 3: Set up Gradio Interface
-def main():
-    with gr.Blocks() as demo:
-        gr.Markdown("## Stable Diffusion Image Generator")
-        
-        # Input elements
-        prompt = gr.Textbox(label="Enter your prompt", placeholder="Describe the image you'd like to generate")
-        num_steps = gr.Slider(10, 100, value=50, step=1, label="Number of Inference Steps")
-        guidance = gr.Slider(1.0, 20.0, value=7.5, step=0.5, label="Guidance Scale")
-        
-        # Output element
-        output_image = gr.Image(label="Generated Image")
-        
-        # Button to generate image
-        generate_btn = gr.Button("Generate Image")
-        
-        # Define button behavior
-        generate_btn.click(fn=generate_image, inputs=[prompt, num_steps, guidance], outputs=output_image)
+def generate(prompt, negative_prompt, steps, guidance, width, height):
+    params = {
+        "negative_prompt": negative_prompt,
+        "num_inference_steps": steps,
+        "guidance_scale": guidance,
+        "width": width,
+        "height": height
+    }
     
-    # Launch the app
-    demo.launch()
+    output = get_completion(prompt, params)
+    pil_image = base64_to_pil(output)
+    return pil_image
 
-# Run the Gradio app
-if __name__ == "__main__":
-    main()
+import gradio as gr 
+
+#A helper function to convert the PIL image to base64 
+# so you can send it to the API
+def base64_to_pil(img_base64):
+    base64_decoded = base64.b64decode(img_base64)
+    byte_stream = io.BytesIO(base64_decoded)
+    pil_image = Image.open(byte_stream)
+    return pil_image
+
+def generate(prompt, negative_prompt, steps, guidance, width, height):
+    params = {
+        "negative_prompt": negative_prompt,
+        "num_inference_steps": steps,
+        "guidance_scale": guidance,
+        "width": width,
+        "height": height
+    }
+    
+    output = get_completion(prompt, params)
+    pil_image = base64_to_pil(output)
+    return pil_image
 ```
 
 ### OUTPUT:
-![image](https://github.com/user-attachments/assets/775288b4-2a00-4c93-8606-4b3cf0a4c6ca)
-
-![image](https://github.com/user-attachments/assets/e0b9ba20-2bb5-4261-9f25-8f9dd07e1879)
+![image](https://github.com/user-attachments/assets/cc85977b-66c8-401b-b5b1-857d4876c974)
+![image](https://github.com/user-attachments/assets/b69f32f6-7ea1-497e-b5a4-6e7e2d218c6c)
 
 ### RESULT:
 The prototype successfully demonstrates text-to-image generation using Stable Diffusion, providing an interactive and user-friendly interface. Users can modify parameters to influence the output quality and style.
-
