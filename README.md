@@ -72,28 +72,6 @@ def generate(prompt, negative_prompt, steps, guidance, width, height):
     pil_image = base64_to_pil(output)
     return pil_image
 
-import gradio as gr 
-
-#A helper function to convert the PIL image to base64 
-# so you can send it to the API
-def base64_to_pil(img_base64):
-    base64_decoded = base64.b64decode(img_base64)
-    byte_stream = io.BytesIO(base64_decoded)
-    pil_image = Image.open(byte_stream)
-    return pil_image
-
-def generate(prompt, negative_prompt, steps, guidance, width, height):
-    params = {
-        "negative_prompt": negative_prompt,
-        "num_inference_steps": steps,
-        "guidance_scale": guidance,
-        "width": width,
-        "height": height
-    }
-    
-    output = get_completion(prompt, params)
-    pil_image = base64_to_pil(output)
-    return pil_image
 ```
 
 ### OUTPUT:
